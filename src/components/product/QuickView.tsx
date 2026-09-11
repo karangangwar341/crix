@@ -37,8 +37,8 @@ export default function QuickView({ product, open, onClose }: { product: Product
               <X size={20} />
             </button>
             <div className="grid grid-cols-1 sm:grid-cols-2">
-              <div className="aspect-square bg-bg-alt p-8">
-                <ProductVisual product={product} angle="front" />
+              <div className="relative aspect-square w-full overflow-hidden bg-bg-alt">
+                <ProductVisual product={product} angle="front" preferPhoto={true} fillMode="cover" />
               </div>
               <div className="flex flex-col p-8">
                 {product.series && <p className="text-[11px] uppercase tracking-[0.1em] text-ink-faint">{product.series}</p>}

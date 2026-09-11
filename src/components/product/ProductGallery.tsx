@@ -109,9 +109,9 @@ export default function ProductGallery({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="h-full w-full p-4 sm:p-6 flex items-center justify-center"
+                className="h-full w-full flex items-center justify-center overflow-hidden"
               >
-                <ProductVisual product={product} angle={currentAngle} preferPhoto={true} fillMode="contain" />
+                <ProductVisual product={product} angle={currentAngle} preferPhoto={true} fillMode="cover" />
               </motion.div>
             </AnimatePresence>
 
@@ -158,7 +158,7 @@ export default function ProductGallery({
                   key={`${img.angle}-${i}`}
                   onClick={() => setActive(i)}
                   className={cn(
-                    "relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-2xl border bg-bg-alt p-1.5 transition-all",
+                    "relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-2xl border bg-bg-alt transition-all",
                     active === i
                       ? "border-black ring-2 ring-black/10 scale-100 opacity-100"
                       : "border-line opacity-60 hover:opacity-100 hover:border-ink-soft"
@@ -172,11 +172,11 @@ export default function ProductGallery({
                         alt={img.alt || product.name}
                         fill
                         sizes="80px"
-                        className="object-contain"
+                        className="object-cover object-center"
                       />
                     </div>
                   ) : (
-                    <ProductVisual product={product} angle={img.angle} preferPhoto={false} />
+                    <ProductVisual product={product} angle={img.angle} preferPhoto={false} fillMode="cover" />
                   )}
                 </button>
               ))}
