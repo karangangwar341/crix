@@ -73,6 +73,7 @@ export default function ProductCard({ product }: { product: Product }) {
           <button
             onClick={(e) => {
               e.preventDefault();
+              e.stopPropagation();
               setQuickViewOpen(true);
             }}
             className="rounded-full bg-white/95 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink shadow-[var(--shadow-sm)] backdrop-blur transition-colors hover:bg-black hover:text-white"
