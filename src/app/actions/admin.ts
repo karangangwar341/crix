@@ -312,3 +312,32 @@ export async function deleteProduct(id: string) {
   }
 }
 
+export async function deleteReview(id: string) {
+  try {
+    await requireAdminSession();
+    await prisma.review.delete({
+      where: { id },
+    });
+    revalidatePath("/admin/reviews");
+    return { success: true };
+  } catch (err: any) {
+    console.error("Error deleting review:", err);
+    return { error: err.message || "Failed to delete review" };
+  }
+}
+
+export async function toggleReviewPublish(id: string, published: boolean) {
+  try {
+    await requireAdminSession();
+    await prisma.review.update({
+      where: { id },
+      data: { published },
+    });
+    revalidatePath("/admin/reviews");
+    return { success: true };
+  } catch (err: any) {
+    console.error("Error updating review:", err);
+    return { error: err.message || "Failed to update review status" };
+  }
+}
+

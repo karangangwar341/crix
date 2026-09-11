@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -14,6 +14,7 @@ import {
   Settings,
   ArrowUpRight,
   ShieldCheck,
+  Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LogoutButton } from "@/components/admin/LogoutButton";
@@ -21,6 +22,7 @@ import { LogoutButton } from "@/components/admin/LogoutButton";
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/products", label: "Products", icon: Package },
+  { href: "/admin/reviews", label: "Reviews", icon: Star },
   { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
   { href: "/admin/customers", label: "Customers (CRM)", icon: Users },
   { href: "/admin/enquiries", label: "Enquiries", icon: Mail },

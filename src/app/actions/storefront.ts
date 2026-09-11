@@ -212,17 +212,26 @@ export async function submitProductReview(input: {
       return { error: "Please fill in all required review fields." };
     }
 
+    // Resolve target product ID (can be passed as ID or slug)
+    const product = await prisma.product.findFirst({
+      where: {
+        OR: [{ id: input.productId }, { slug: input.productId }],
+      },
+    });
+
+    const targetProductId = product ? product.id : input.productId;
     const rating = Math.max(1, Math.min(5, Math.round(input.rating || 5)));
 
-    await prisma.review.create({
+    const created = await prisma.review.create({
       data: {
-        productId: input.productId,
+        productId: targetProductId,
         author: input.author.trim(),
         verified: true,
         rating,
         title: input.title.trim(),
         body: input.body.trim(),
-        tags: JSON.stringify(input.tags || ["Performance"]),
+        tags: JSON.stringify(input.tags && input.tags.length > 0 ? input.tags : ["Performance"]),
+        isSample: false,
         published: true,
       },
     });
@@ -230,14 +239,14 @@ export async function submitProductReview(input: {
     // Update product rating and review count if product exists in DB
     try {
       const reviews = await prisma.review.findMany({
-        where: { productId: input.productId, published: true },
+        where: { productId: targetProductId, published: true },
         select: { rating: true },
       });
 
       if (reviews.length > 0) {
         const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
         await prisma.product.update({
-          where: { id: input.productId },
+          where: { id: targetProductId },
           data: {
             reviewCount: reviews.length,
             rating: Math.round(avg * 10) / 10,
@@ -248,11 +257,75 @@ export async function submitProductReview(input: {
       // Non-fatal if product was queried statically
     }
 
+    if (product) {
+      revalidatePath(`/${product.categoryId}/${product.slug}`);
+      revalidatePath(`/${product.categoryId}`);
+    }
     revalidatePath("/bats");
-    return { success: true };
+    revalidatePath("/accessories");
+    revalidatePath("/batting-gloves");
+    revalidatePath("/batting-pads");
+    revalidatePath("/helmets");
+    revalidatePath("/bags");
+
+    return {
+      success: true,
+      review: {
+        id: created.id,
+        productId: created.productId,
+        author: created.author,
+        verified: created.verified,
+        rating: created.rating,
+        title: created.title,
+        body: created.body,
+        tags: input.tags || ["Performance"],
+        date: created.createdAt.toISOString(),
+      },
+    };
   } catch (error: any) {
     console.error("Error submitting review:", error);
-    return { error: "Failed to submit review. Please try again." };
+    return { error: error.message || "Failed to submit review. Please try again." };
+  }
+}
+
+export async function getReviewsForProductAction(productId: string) {
+  try {
+    const product = await prisma.product.findFirst({
+      where: {
+        OR: [{ id: productId }, { slug: productId }],
+      },
+    });
+
+    const targetId = product ? product.id : productId;
+
+    const dbReviews = await prisma.review.findMany({
+      where: {
+        OR: [{ productId: targetId }, { productId }],
+        published: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return dbReviews.map((r) => ({
+      id: r.id,
+      productId: r.productId,
+      author: r.author,
+      verified: r.verified,
+      rating: r.rating,
+      title: r.title,
+      body: r.body,
+      tags: (() => {
+        try {
+          return JSON.parse(r.tags || "[]");
+        } catch {
+          return ["Performance"];
+        }
+      })(),
+      date: r.createdAt.toISOString(),
+    }));
+  } catch (error) {
+    console.error("Error fetching reviews for product:", error);
+    return [];
   }
 }
 

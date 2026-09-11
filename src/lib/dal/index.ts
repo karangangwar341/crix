@@ -363,10 +363,21 @@ export async function getSiteSettings(): Promise<SiteSettings> {
 // -----------------------------------------------------------------------------
 export async function getProductReviews(productId: string): Promise<Review[]> {
   try {
+    const product = await prisma.product.findFirst({
+      where: {
+        OR: [{ id: productId }, { slug: productId }]
+      }
+    });
+    const targetId = product ? product.id : productId;
+
     const data = await prisma.review.findMany({
-      where: { productId, published: true },
+      where: {
+        OR: [{ productId: targetId }, { productId }],
+        published: true
+      },
       orderBy: { createdAt: 'desc' }
     });
+
     return data.map(r => ({
       id: r.id,
       productId: r.productId,
@@ -375,7 +386,13 @@ export async function getProductReviews(productId: string): Promise<Review[]> {
       rating: r.rating,
       title: r.title,
       body: r.body,
-      tags: JSON.parse(r.tags || "[]"),
+      tags: (() => {
+        try {
+          return JSON.parse(r.tags || "[]");
+        } catch {
+          return ["Performance"];
+        }
+      })(),
       date: r.createdAt.toISOString()
     }));
   } catch (err) {

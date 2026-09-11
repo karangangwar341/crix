@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getProductBySlug, getProductsByCategory, getRelatedProducts } from "@/lib/dal";
+import { getProductBySlug, getProductsByCategory, getRelatedProducts, getProductReviews } from "@/lib/dal";
 import ProductGallery from "@/components/product/ProductGallery";
 import ProductInfoPanel from "@/components/product/ProductInfoPanel";
 import Configurator from "@/components/product/Configurator";
@@ -46,7 +46,10 @@ export default async function BatDetailPage({ params }: { params: Promise<{ slug
     { id: "spine", label: "Spine", x: "50%", y: "35%", title: "Pronounced Spine", body: `${specs.spine}mm spine geometry maximises hitting area while maintaining controlled pickup.` },
   ];
 
-  const related = await getRelatedProducts(product.id, "bats", 4);
+  const [related, reviews] = await Promise.all([
+    getRelatedProducts(product.id, "bats", 4),
+    getProductReviews(product.id),
+  ]);
 
   return (
     <div>
@@ -82,7 +85,7 @@ export default async function BatDetailPage({ params }: { params: Promise<{ slug
       </section>
 
       <Anatomy product={product} />
-      <ProductReviews product={product} />
+      <ProductReviews product={product} initialReviews={reviews} />
       <RelatedProducts title="You May Also Like" products={related} />
     </div>
   );

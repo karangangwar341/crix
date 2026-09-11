@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Star, Heart, Truck, ShieldCheck } from "lucide-react";
-import { Product } from "@/lib/types";
+import { Product, Review } from "@/lib/types";
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/lib/store/cart";
 import { useWishlist } from "@/lib/store/wishlist";
@@ -10,7 +10,15 @@ import ProductGallery from "./ProductGallery";
 import ProductReviews from "./ProductReviews";
 import RelatedProducts from "./RelatedProducts";
 
-export default function SimpleProductDetail({ product, related }: { product: Product; related: Product[] }) {
+export default function SimpleProductDetail({
+  product,
+  related,
+  initialReviews = [],
+}: {
+  product: Product;
+  related: Product[];
+  initialReviews?: Review[];
+}) {
   const [variantId, setVariantId] = useState(product.variants[0]?.id);
   const addItem = useCart((s) => s.addItem);
   const wishlist = useWishlist();
@@ -81,7 +89,7 @@ export default function SimpleProductDetail({ product, related }: { product: Pro
         </div>
       </div>
 
-      <ProductReviews product={product} />
+      <ProductReviews product={product} initialReviews={initialReviews} />
       <RelatedProducts title="You May Also Like" products={related} />
     </div>
   );

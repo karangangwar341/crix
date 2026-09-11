@@ -1,22 +1,87 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Star, BadgeCheck, PenLine, X, CheckCircle2 } from "lucide-react";
 import { Product, Review } from "@/lib/types";
 import { generateReviews } from "@/lib/data/reviews";
 import { Reveal } from "@/components/ui/Reveal";
-import { submitProductReview } from "@/app/actions/storefront";
+import { submitProductReview, getReviewsForProductAction } from "@/app/actions/storefront";
 
 const FILTERS = ["All", "Performance", "Pickup", "Balance", "Looks"] as const;
 
-export default function ProductReviews({ product }: { product: Product }) {
-  const initialReviews = useMemo(
-    () => generateReviews(product.id, Math.min(12, product.reviewCount || 8), product.rating),
+function mergeReviews(realReviews: Review[], sampleReviews: Review[]): Review[] {
+  const existingIds = new Set(realReviews.map((r) => r.id));
+  const list = [...realReviews];
+  for (const sample of sampleReviews) {
+    if (!existingIds.has(sample.id) && list.length < 10) {
+      list.push(sample);
+    }
+  }
+  return list;
+}
+
+export default function ProductReviews({
+  product,
+  initialReviews = [],
+}: {
+  product: Product;
+  initialReviews?: Review[];
+}) {
+  const sampleReviews = useMemo(
+    () => generateReviews(product.id, Math.min(8, product.reviewCount || 6), product.rating),
     [product]
   );
-  const [reviewsList, setReviewsList] = useState<Review[]>(initialReviews);
+
+  const [reviewsList, setReviewsList] = useState<Review[]>(() => {
+    if (initialReviews && initialReviews.length > 0) {
+      return mergeReviews(initialReviews, sampleReviews);
+    }
+    return sampleReviews;
+  });
+
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("All");
   const [writeModalOpen, setWriteModalOpen] = useState(false);
+
+  // Sync client-side with live DB reviews and localStorage
+  useEffect(() => {
+    let active = true;
+
+    async function loadFreshReviews() {
+      try {
+        const freshDbReviews = await getReviewsForProductAction(product.id);
+
+        let localReviews: Review[] = [];
+        try {
+          const raw = localStorage.getItem(`crix_user_reviews_${product.id}`);
+          if (raw) localReviews = JSON.parse(raw);
+        } catch {}
+
+        if (active) {
+          const combinedReal: Review[] = [];
+          const seen = new Set<string>();
+
+          for (const r of [...localReviews, ...freshDbReviews]) {
+            const key = r.id || `${r.author}-${r.title}`;
+            if (!seen.has(key)) {
+              seen.add(key);
+              combinedReal.push(r);
+            }
+          }
+
+          if (combinedReal.length > 0) {
+            setReviewsList(mergeReviews(combinedReal, sampleReviews));
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load fresh reviews:", err);
+      }
+    }
+
+    loadFreshReviews();
+    return () => {
+      active = false;
+    };
+  }, [product.id, sampleReviews]);
 
   // Form State
   const [rating, setRating] = useState(5);
@@ -33,6 +98,12 @@ export default function ProductReviews({ product }: { product: Product }) {
     filter === "All"
       ? reviewsList
       : reviewsList.filter((r) => r.tags.includes(filter as Review["tags"][number]));
+
+  const avgRating = useMemo(() => {
+    if (!reviewsList.length) return product.rating.toFixed(1);
+    const sum = reviewsList.reduce((acc, r) => acc + r.rating, 0);
+    return (sum / reviewsList.length).toFixed(1);
+  }, [reviewsList, product.rating]);
 
   const distribution = [5, 4, 3, 2, 1].map((star) => ({
     star,
@@ -66,8 +137,8 @@ export default function ProductReviews({ product }: { product: Product }) {
       return;
     }
 
-    // Add submitted review to local view
-    const newRev: Review = {
+    // Add submitted review to local view immediately
+    const newRev: Review = (res as any)?.review || {
       id: `rev-${Date.now()}`,
       productId: product.id,
       author,
@@ -79,7 +150,18 @@ export default function ProductReviews({ product }: { product: Product }) {
       date: new Date().toISOString(),
     };
 
-    setReviewsList([newRev, ...reviewsList]);
+    setReviewsList((prev) => [newRev, ...prev.filter((r) => r.id !== newRev.id)]);
+
+    // Save to localStorage for instant local persistence
+    try {
+      const raw = localStorage.getItem(`crix_user_reviews_${product.id}`);
+      const stored: Review[] = raw ? JSON.parse(raw) : [];
+      localStorage.setItem(
+        `crix_user_reviews_${product.id}`,
+        JSON.stringify([newRev, ...stored.filter((r) => r.id !== newRev.id)])
+      );
+    } catch {}
+
     setSubmitSuccess(true);
     setTimeout(() => {
       setSubmitSuccess(false);
@@ -87,14 +169,14 @@ export default function ProductReviews({ product }: { product: Product }) {
       setAuthor("");
       setTitle("");
       setBody("");
-    }, 2500);
+    }, 2000);
   }
 
   return (
     <section className="mx-auto max-w-[1600px] px-5 py-24 lg:px-10">
       <Reveal className="mb-10 text-center">
         <p className="mb-2 text-[12px] font-medium uppercase tracking-[0.2em] text-ink-faint">Reviews</p>
-        <h2 className="font-display text-4xl sm:text-5xl">{product.rating} out of 5</h2>
+        <h2 className="font-display text-4xl sm:text-5xl">{avgRating} out of 5</h2>
         <p className="mt-2 text-sm text-ink-soft">Based on {reviewsList.length} reviews</p>
 
         <div className="mt-6 flex justify-center">
