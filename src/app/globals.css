@@ -1,0 +1,124 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #ffffff;
+  --bg-alt: #f7f7f7;
+  --surface: #ffffff;
+  --ink: #050505;
+  --ink-soft: #6b6b6b;
+  --ink-faint: #999999;
+  --line: #e8e8e8;
+  --line-soft: #f1f1f1;
+  /* small uppercase "eyebrow" accent — muted grey on light sections */
+  --gold: #6b6b6b;
+  /* same role, but for use on the always-black sections below */
+  --gold-soft: #bdbdbd;
+  /* reserved for negative/error states only (out of stock, decline) */
+  --wine: #b3261e;
+
+  /* fixed tokens for sections that must always read as solid black
+     regardless of the site's overall theme (navbar, footer, the
+     craftsmanship scroll story, brand-statement blocks). */
+  --deep: #000000;
+  --deep-fg: #ffffff;
+
+  --shadow-sm: 0 4px 15px rgba(0, 0, 0, 0.04);
+  --shadow-card: 0 10px 35px rgba(0, 0, 0, 0.06);
+  --shadow-hover: 0 18px 50px rgba(0, 0, 0, 0.1);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-alt: var(--bg-alt);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-wine: var(--wine);
+  --color-deep: var(--deep);
+  --color-deep-fg: var(--deep-fg);
+  --font-display: var(--font-inter);
+  --font-sans: var(--font-inter);
+}
+
+* {
+  border-color: var(--line);
+}
+
+/* Default radius for plain form controls / buttons that don't specify
+   their own rounded-* utility — explicit utilities (rounded-full, etc.)
+   still win via the cascade layer order. */
+@layer base {
+  button,
+  input,
+  select,
+  textarea,
+  a {
+    border-radius: 12px;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: light;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+::selection {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.font-display {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* premium card surface: white, soft radius, barely-there shadow that
+   deepens slightly on hover — used for products, categories, panels */
+.card-surface {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1), transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.card-surface:hover {
+  box-shadow: var(--shadow-hover);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* thin custom scrollbar for horizontal rails */
+.rail::-webkit-scrollbar {
+  height: 4px;
+}
+.rail::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 4px;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
